@@ -117,14 +117,15 @@ class _HomeWidgetState extends State<HomeWidget>
     implements MesiboConnectionListener, MesiboMessageListener {
   Mesibo mesibo = Mesibo();
   String mesiboStatus = 'Mesibo status: Not Connected.';
-  bool isInit = false;
+  bool isMesiboInit = false;
+  bool isProfilesInit = false;
   MesiboProfile? selfProfile;
   MesiboProfile? remoteProfile;
 
   initProfiles() async {
     selfProfile = await mesibo.getSelfProfile() as MesiboProfile;
     remoteProfile = await mesibo.getUserProfile('35');
-    isInit = true;
+    isProfilesInit = true;
     setState(() {});
   }
 
@@ -158,6 +159,8 @@ class _HomeWidgetState extends State<HomeWidget>
     rs = MesiboReadSession.createReadSession(this);
     await rs.read(100);
     await mesibo.start();
+    isMesiboInit = true;
+    setState(() {});
   }
 
   @override
@@ -183,7 +186,7 @@ class _HomeWidgetState extends State<HomeWidget>
 
   @override
   Widget build(BuildContext context) {
-    if (!isInit) {
+    if (!isMesiboInit) {
       initMesibo();
     }
     return Center(
@@ -206,7 +209,7 @@ class _HomeWidgetState extends State<HomeWidget>
           const SizedBox(
             height: 20,
           ),
-          isInit
+          isMesiboInit && isProfilesInit
               ? GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -235,7 +238,6 @@ class _HomeWidgetState extends State<HomeWidget>
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                       
                       ],
                     ),
                   ),
