@@ -262,17 +262,34 @@ class _HomeWidgetState extends State<HomeWidget>
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.grey),
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Chat',
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        child: Text(remoteProfile?.name?[0] ?? 'N'),
+                      ),
+                      title: Text(
+                        remoteProfile?.name ?? 'No name',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Builder(builder: (context) {
+                        MesiboMessage lastMessage =
+                            Provider.of<MessagesProvider>(context,
+                                    listen: false)
+                                .messages
+                                .last;
+                        return Text(
+                          (lastMessage.isIncoming()
+                                  ? remoteProfile?.name ?? 'No name'
+                                  : 'You') +
+                              ': ${lastMessage.message}',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
-                        ),
-                      ],
+                        );
+                      }),
                     ),
                   ),
                 )
