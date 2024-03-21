@@ -1,11 +1,13 @@
 // ignore_for_file: non_constant_identifier_names
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:mesibo_flutter_sdk/mesibo.dart';
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:firebase_core/firebase_core.dart';
+import 'package:mesibo_sample_app/method_channel.dart';
+
 import 'firebase_options.dart';
 
 List<MesiboMessage> mesiboMessages = [];
@@ -100,6 +102,17 @@ class FirstMesiboApp extends StatelessWidget {
           title: const Text("First Mesibo App"),
         ),
         body: const HomeWidget(),
+        floatingActionButton: FloatingActionButton.extended(
+            label: Text('Platform channel'),
+            onPressed: () async {
+              try {
+                final value = await MethodChannelExample.getMsg();
+                print(value);
+              } catch (error) {
+                if (!context.mounted) return;
+                print(error);
+              }
+            }),
       ),
       debugShowCheckedModeBanner: false,
     );
