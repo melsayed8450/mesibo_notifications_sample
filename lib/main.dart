@@ -7,10 +7,20 @@ import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:mesibo_flutter_sdk/mesibo.dart';
 import 'package:mesibo_sample_app/method_channel.dart';
+import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 
-List<MesiboMessage> mesiboMessages = [];
+class MessagesProvider extends ChangeNotifier {
+  List<MesiboMessage> _messages = [];
+
+  List<MesiboMessage> get messages => _messages;
+
+  void addMessage(MesiboMessage newMessage) {
+    _messages.add(newMessage);
+    notifyListeners();
+  }
+}
 
 class PushNotificationClient {
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
@@ -82,7 +92,7 @@ Future<void> initApp() async {
 }
 
 void main() async {
-  await initApp();
+  // await initApp();
 
   runApp(const FirstMesiboApp());
 }
@@ -92,29 +102,32 @@ class FirstMesiboApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Mesibo Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blueGrey,
-      ),
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text("First Mesibo App"),
+    return ChangeNotifierProvider(
+      create: (context) => MessagesProvider(),
+      child: MaterialApp(
+        title: 'Mesibo Flutter Demo',
+        theme: ThemeData(
+          primarySwatch: Colors.blueGrey,
         ),
-        body: const HomeWidget(),
-        floatingActionButton: FloatingActionButton.extended(
-            label: Text('Platform channel'),
-            onPressed: () async {
-              try {
-                final value = await MethodChannelExample.getMsg();
-                print(value);
-              } catch (error) {
-                if (!context.mounted) return;
-                print(error);
-              }
-            }),
+        home: Scaffold(
+          appBar: AppBar(
+            title: const Text("First Mesibo App"),
+          ),
+          body: const HomeWidget(),
+          floatingActionButton: FloatingActionButton.extended(
+              label: Text('Platform channel'),
+              onPressed: () async {
+                try {
+                  final value = await MethodChannelExample.getMsg();
+                  print(value);
+                } catch (error) {
+                  if (!context.mounted) return;
+                  print(error);
+                }
+              }),
+        ),
+        debugShowCheckedModeBanner: false,
       ),
-      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -134,10 +147,15 @@ class _HomeWidgetState extends State<HomeWidget>
   bool isProfilesInit = false;
   MesiboProfile? selfProfile;
   MesiboProfile? remoteProfile;
+  types.User? user;
 
   initProfiles() async {
     selfProfile = await mesibo.getSelfProfile() as MesiboProfile;
     remoteProfile = await mesibo.getUserProfile('35');
+    user = types.User(
+      id: selfProfile!.address.toString(),
+      firstName: selfProfile!.name,
+    );
     isProfilesInit = true;
     setState(() {});
   }
@@ -167,18 +185,19 @@ class _HomeWidgetState extends State<HomeWidget>
     mesibo.setListener(this);
     await mesibo.setDatabase('55.db');
     await mesibo.restoreDatabase('55.db', 9999);
+    await mesibo.start();
+    isMesiboInit = true;
     MesiboReadSession rs = MesiboReadSession.createReadSummarySession(this);
     await rs.read(100);
     rs = MesiboReadSession.createReadSession(this);
     await rs.read(100);
-    await mesibo.start();
-    isMesiboInit = true;
     setState(() {});
   }
 
   @override
   void Mesibo_onMessage(MesiboMessage message) {
-    mesiboMessages.add(message);
+    Provider.of<MessagesProvider>(context, listen: false).addMessage(message);
+    // mesiboMessages.add(message);
     setState(() {});
   }
 
@@ -192,9 +211,12 @@ class _HomeWidgetState extends State<HomeWidget>
     print('Mesibo_onMessageUpdate: ' + message.message!);
   }
 
-  @override
-  void initState() {
-    super.initState();
+  _handleSendPressed(types.PartialText partialText) {
+    if (remoteProfile == null) return;
+    MesiboMessage message = remoteProfile!.newMessage();
+    message.message = partialText.text;
+    message.send();
+    setState(() {});
   }
 
   @override
@@ -229,9 +251,8 @@ class _HomeWidgetState extends State<HomeWidget>
                       context,
                       MaterialPageRoute(
                         builder: (context) => ChatScreen(
-                          mesibo: mesibo,
-                          selfProfile: selfProfile!,
-                          remoteProfile: remoteProfile!,
+                          handleSendPressed: _handleSendPressed,
+                          user: user ?? const types.User(id: '0'),
                         ),
                       ),
                     );
@@ -270,53 +291,41 @@ class _HomeWidgetState extends State<HomeWidget>
 class ChatScreen extends StatefulWidget {
   const ChatScreen({
     super.key,
-    required this.mesibo,
-    required this.selfProfile,
-    required this.remoteProfile,
+    required this.user,
+    required this.handleSendPressed,
   });
-  final Mesibo mesibo;
-  final MesiboProfile selfProfile;
-  final MesiboProfile remoteProfile;
+  final types.User user;
+  final void Function(types.PartialText) handleSendPressed;
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  State<ChatScreen> createState() => _CustomBottomSheetState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
-  String remoteAdress = '35';
-  late types.User _user;
-
-  @override
-  void initState() {
-    _user = types.User(
-      id: widget.selfProfile.address.toString(),
-      firstName: widget.selfProfile.name,
-    );
-    super.initState();
-  }
-
-  _handleSendPressed(types.PartialText partialText) {
-    MesiboMessage message = widget.remoteProfile.newMessage();
-    message.message = partialText.text;
-    mesiboMessages.add(message);
-    message.send();
-    setState(() {});
-  }
-
+class _CustomBottomSheetState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
-    return Chat(
-      messages: mesiboMessages
-          .map(
-            (m) => types.TextMessage(
-              author: types.User(id: m.profile?.address ?? ''),
-              text: m.message ?? '',
-              id: m.mid.toString(),
-            ),
-          )
-          .toList(),
-      onSendPressed: _handleSendPressed,
-      user: _user,
-    );
+    return Consumer<MessagesProvider>(builder: (context, dataProvider, _) {
+      return Chat(
+        inputOptions: const InputOptions(
+          sendButtonVisibilityMode: SendButtonVisibilityMode.always,
+        ),
+        messages: dataProvider.messages
+            .map(
+              (m) => types.TextMessage(
+                author: types.User(
+                    id: m.isIncoming()
+                        ? m.profile?.address ?? ''
+                        : widget.user.id),
+                text: m.message ?? '',
+                id: m.mid.toString(),
+              ),
+            )
+            .toList()
+            .reversed
+            .toList(),
+        onSendPressed: widget.handleSendPressed,
+        user: widget.user,
+      );
+    });
   }
 }
