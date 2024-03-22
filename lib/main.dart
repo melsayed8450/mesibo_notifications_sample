@@ -264,21 +264,28 @@ class _HomeWidgetState extends State<HomeWidget>
                     ),
                     child: ListTile(
                       leading: CircleAvatar(
-                        child: Text(remoteProfile?.name?[0] ?? 'N'),
+                        child: Text((remoteProfile?.name?.isEmpty ?? true)
+                            ? 'N'
+                            : remoteProfile!.name![0]),
                       ),
                       title: Text(
-                        remoteProfile?.name ?? 'No name',
+                        (remoteProfile?.name?.trim().isEmpty ?? true)
+                            ? 'No name'
+                            : remoteProfile!.name!,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       subtitle: Builder(builder: (context) {
-                        MesiboMessage lastMessage =
+                        MesiboMessage? lastMessage =
                             Provider.of<MessagesProvider>(context,
                                     listen: false)
                                 .messages
-                                .last;
+                                .lastOrNull;
+                        if (lastMessage == null) {
+                          return Container();
+                        }
                         return Text(
                           (lastMessage.isIncoming()
                                   ? remoteProfile?.name ?? 'No name'
