@@ -15,3 +15,4 @@ commented out and see that `mesibo` is working but if we enable that line then `
 we also have added a simple platform channel `methodChannelExample` with method `getMsg` which we call when we click on the Floating action button,\
 it will print `hello from method channel` in console if the call was successful , this is to demonstrate that even when `mesibo` is not working, our platform channel works, which disproves the speculation that `firebase_messaging v14.7.20` is causing the platform channel to close/terminate or misbehave.
 
+### NOTE: whenerver you comment out or uncomment the code `FirebaseMessaging.onBackgroundMessage(_handleBackgroundMessage);` , you need to stop the excution of the app and rerun it to take effect
