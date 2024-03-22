@@ -30,9 +30,10 @@ class PushNotificationClient {
   }
 
   Future<void> _init() async {
-    // the following  lines with line number 12-22 that are commented out does not affect the working of mesibo
+    // the following  lines between start and end that are commented out does not affect the working of mesibo
     // so it doesn't matter if they are commented out or not
 
+    // ------------- start ---------------
     // await _fcm.setForegroundNotificationPresentationOptions(
     //     alert: true, sound: true, badge: true);
     // FirebaseMessaging.onMessageOpenedApp.listen(handleMessage);
@@ -44,8 +45,9 @@ class PushNotificationClient {
     //     print('Message notification body: ${message.notification!.body}');
     //   }
     // });
+    // ------------- end ---------------
 
-    // if we comment out below line then mesibo starts working normally
+    /// if we comment out below line then mesibo starts working normally
     FirebaseMessaging.onBackgroundMessage(_handleBackgroundMessage);
   }
 
@@ -92,7 +94,7 @@ Future<void> initApp() async {
 }
 
 void main() async {
-  // await initApp();
+  await initApp();
 
   runApp(const FirstMesiboApp());
 }
