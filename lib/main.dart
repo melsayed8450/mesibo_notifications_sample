@@ -49,6 +49,7 @@ class PushNotificationClient {
 
     /// if we comment out below line then mesibo starts working normally
     FirebaseMessaging.onBackgroundMessage(_handleBackgroundMessage);
+    print(' after FirebaseMessaging.onBackgroundMessage');
   }
 
   Future<void> initialize() async {
@@ -91,6 +92,7 @@ Future<void> initApp() async {
 
   // here we initialize the push notifications
   await PushNotificationClient().initialize();
+  print(' after PushNotificationClient().initialize()');
 }
 
 void main() async {
